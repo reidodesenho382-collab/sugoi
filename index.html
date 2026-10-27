@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sugoi TCG – Leilão de cartas Pokémon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#14213D;--paper:#EEF1F6;--card:#fff;--line:#D5DBE6;--hot:#E63946;--gold:#F0B232;--mute:#5B6784;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--ink:#EAF0FF;--paper:#0F1626;--card:#18213A;--line:#2B3856;--mute:#9AA7C7;color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+.signup{display:grid;gap:14px}
+.link{background:none;color:var(--mute);padding:0;font-weight:500;text-decoration:underline;justify-self:start}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:520px){.two,.three{grid-template-columns:1fr}}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "DM Sans",system-ui,sans-serif}
+h1,h2,h3,.logo{font-family:"Bricolage Grotesque",system-ui,sans-serif;margin:0}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px clamp(16px,4vw,40px);border-bottom:3px solid var(--gold);position:sticky;top:0;background:#000;z-index:5}
+.logo-img{height:48px;width:auto;display:block;border-radius:6px}
+header .ghost{color:#fff;border-color:#555}
+header .meta{color:#cfcfcf}
+.logo{font-size:1.5rem;font-weight:800;letter-spacing:-.02em}.logo b{color:var(--hot)}
+button,.btn{font:inherit;font-weight:700;border:0;border-radius:8px;padding:10px 16px;cursor:pointer;background:var(--ink);color:var(--paper)}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button.hot{background:var(--hot);color:#fff}
+button:disabled{opacity:.5;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+main{max-width:1180px;margin:0 auto;padding:clamp(20px,4vw,40px) clamp(16px,4vw,40px) 80px}
+.top{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:16px;margin-bottom:24px}
+.top h1{font-size:clamp(1.8rem,5vw,3rem);line-height:1.05;letter-spacing:-.03em;max-width:14ch}
+.tabs{display:flex;gap:6px}.tabs button{background:transparent;color:var(--mute);border:1px solid var(--line)}
+.tabs button[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;cursor:pointer;text-align:left;color:inherit;font-weight:400;display:flex;flex-direction:column;gap:10px}
+.tile:hover{border-color:var(--ink)}
+.frame{aspect-ratio:63/88;border-radius:8px;background:linear-gradient(135deg,var(--gold),#ff7b54 40%,#6c5ce7 75%,#00b8d9);padding:5px;position:relative;overflow:hidden}
+.frame img{width:100%;height:100%;object-fit:cover;border-radius:5px;display:block;background:var(--line)}
+.frame::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.45) 50%,transparent 65%);transform:translateX(-100%);transition:transform .7s}
+.tile:hover .frame::after{transform:translateX(100%)}
+.tile h3{font-size:1.05rem;font-weight:700;line-height:1.2}
+.meta{color:var(--mute);font-size:.88rem}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.price{font:800 1.3rem "Bricolage Grotesque",sans-serif}
+.time{font-weight:700;font-variant-numeric:tabular-nums}.time.soon{color:var(--hot)}
+.empty{grid-column:1/-1;padding:48px 0;color:var(--mute);text-align:center}
+dialog{border:0;border-radius:16px;padding:0;background:var(--card);color:var(--ink);width:min(760px,94vw);max-height:92vh}
+dialog::backdrop{background:rgba(10,15,30,.6)}
+.pad{padding:22px;display:grid;gap:14px}
+.detail{display:grid;grid-template-columns:minmax(0,260px) 1fr;gap:22px}
+@media(max-width:620px){.detail{grid-template-columns:1fr}.frame{max-width:260px;margin:auto;width:100%}}
+label{display:grid;gap:4px;font-weight:700;font-size:.9rem}
+input,select{font:inherit;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);width:100%}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.bids{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:.92rem;max-height:160px;overflow:auto}
+.bids li{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:4px}
+.err{color:var(--hot);font-weight:700;min-height:1.4em;margin:0}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:12px 18px;border-radius:10px;font-weight:700;z-index:20}
+.badge{display:inline-block;background:var(--gold);color:#14213D;border-radius:6px;padding:2px 8px;font-weight:700;font-size:.8rem}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <img class="logo-img" alt="Sugoi TCG" width="238" height="96" src="data:image/png;base64,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">
+  <div style="display:flex;gap:8px;align-items:center">
+    <span id="who" class="meta"></span>
+    <button id="newBtn" class="hot" hidden>Criar leilão</button>
+    <button id="signBtn" class="hot">Criar conta</button>
+    <button id="authBtn" class="ghost">Entrar</button>
+  </div>
+</header>
+
+<main>
+  <div class="top">
+    <h1>Cartas Pokémon em leilão ao vivo</h1>
+    <div class="tabs" role="group" aria-label="Filtrar leilões">
+      <button data-f="live" aria-pressed="true">Ativos</button>
+      <button data-f="done" aria-pressed="false">Encerrados</button>
+    </div>
+  </div>
+  <div id="grid" class="grid" aria-live="polite"><p class="empty">Carregando leilões…</p></div>
+</main>
+
+<dialog id="dlg"><div class="pad" id="dlgBody"></div></dialog>
+
+<dialog id="authDlg">
+  <form class="pad" id="authForm">
+    <div class="row">
+      <div class="tabs" role="group" aria-label="Acesso">
+        <button type="button" class="atab" data-m="login" aria-pressed="true">Entrar</button>
+        <button type="button" class="atab" data-m="signup" aria-pressed="false">Criar conta</button>
+      </div>
+      <button type="button" class="ghost" id="authClose" aria-label="Fechar">✕</button>
+    </div>
+    <div class="signup" hidden>
+      <label>Nome completo<input name="fullName" autocomplete="name" maxlength="100" placeholder="Ash Ketchum"></label>
+    </div>
+    <label>E-mail<input name="email" type="email" required autocomplete="email"></label>
+    <label>Senha<input name="password" type="password" required minlength="8" autocomplete="current-password" placeholder="Mínimo de 8 caracteres"></label>
+    <div class="signup" hidden>
+      <div class="two">
+        <label>Telefone (com DDD)<input name="phone" id="phone" inputmode="tel" autocomplete="tel" placeholder="(11) 91234-5678"></label>
+        <label>CPF<input name="cpf" id="cpf" inputmode="numeric" placeholder="000.000.000-00"></label>
+      </div>
+      <div class="two">
+        <label>CEP<input name="cep" id="cep" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000"></label>
+        <label>Rua<input name="street" autocomplete="address-line1" maxlength="100"></label>
+      </div>
+      <div class="two">
+        <label>Número<input name="number" maxlength="10"></label>
+        <label>Complemento (opcional)<input name="complement" maxlength="60" data-opt></label>
+      </div>
+      <div class="three">
+        <label>Bairro<input name="district" maxlength="60"></label>
+        <label>Cidade<input name="city" maxlength="60"></label>
+        <label>Estado (UF)<input name="state" maxlength="2" pattern="[A-Za-z]{2}" placeholder="SP"></label>
+      </div>
+    </div>
+    <p class="err" id="authErr" role="alert"></p>
+    <button type="submit" id="authSubmit" class="hot">Entrar</button>
+    <button type="button" class="link" id="forgot">Esqueci minha senha</button>
+  </form>
+</dialog>
+
+<dialog id="newDlg">
+  <form class="pad" id="newForm" method="dialog">
+    <h2>Criar leilão</h2>
+    <label>Nome da carta<input name="name" required maxlength="80" placeholder="Charizard ex 199/165"></label>
+    <div class="two">
+      <label>Coleção<input name="set" required maxlength="60" placeholder="Pokémon 151"></label>
+      <label>Condição
+        <select name="cond"><option>Mint (M)</option><option>Near Mint (NM)</option><option>Excelente (EX)</option><option>Boa (GD)</option><option>Jogada (PL)</option><option>Danificada (DMG)</option></select>
+      </label>
+    </div>
+    <div class="two">
+      <label>Lance inicial (R$)<input name="start" type="number" min="1" step="0.01" required></label>
+      <label>Incremento mínimo (R$)<input name="step" type="number" min="1" step="0.01" value="5" required></label>
+    </div>
+    <div class="two">
+      <label>Preço de mercado (R$, referência)<input name="market" type="number" min="0" step="0.01"></label>
+    </div>
+    <div class="two">
+      <label>Duração
+        <select name="hours"><option value="1">1 hora</option><option value="6">6 horas</option><option value="24" selected>24 horas</option><option value="72">3 dias</option><option value="168">7 dias</option></select>
+      </label>
+      <label>Foto da carta<input name="img" type="file" accept="image/*" required></label>
+    </div>
+    <p class="err" id="newErr"></p>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button type="button" class="ghost" id="newCancel">Cancelar</button>
+      <button type="submit" id="newSubmit" class="hot">Publicar leilão</button>
+    </div>
+  </form>
+</dialog>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendEmailVerification, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, addDoc, getDoc, deleteDoc, onSnapshot, query, orderBy, limit, runTransaction, increment, writeBatch, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyBkmhX5nMcjVl1Z_zgIaNk24Y8rct0ZrgY",
+  authDomain: "sugoi-leilao.firebaseapp.com",
+  projectId: "sugoi-leilao",
+  storageBucket: "sugoi-leilao.firebasestorage.app",
+  messagingSenderId: "1022986285172",
+  appId: "1:1022986285172:web:f42dba6491ac4c77816121",
+  measurementId: "G-QP7QB3GR4Q"
+});
+try { getAnalytics(app); } catch (e) {}
+const auth = getAuth(app), db = getFirestore(app);
+
+// Sem Firebase Storage (plano gratuito): a foto é reduzida e guardada no próprio documento do leilão.
+async function compress(file) {
+  const bmp = await createImageBitmap(file);
+  const r = Math.min(1, 520 / bmp.width);
+  const c = document.createElement("canvas");
+  c.width = Math.round(bmp.width * r); c.height = Math.round(bmp.height * r);
+  c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+  for (const q of [0.75, 0.6, 0.45, 0.3]) {
+    const url = c.toDataURL("image/jpeg", q);
+    if (url.length < 300000) return url;
+  }
+  throw new Error("Imagem muito grande. Tente outra foto.");
+}
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const brl = n => Number(n || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmtTime = ms => {
+  if (ms <= 0) return "Encerrado";
+  const s = Math.floor(ms / 1000), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+  return d ? `${d}d ${h}h ${m}min` : h ? `${h}h ${m}min ${x}s` : `${m}min ${x}s`;
+};
+function toast(msg) { const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.append(t); setTimeout(() => t.remove(), 3200); }
+
+let user = null, auctions = [], filter = "live", openId = null, unsubDetail = [];
+
+/* ---------- Auth ---------- */
+let isAdmin = false;
+onAuthStateChanged(auth, async u => {
+  user = u;
+  isAdmin = false;
+  if (u) { try { isAdmin = (await getDoc(doc(db, "admins", u.uid))).exists(); } catch (e) {} }
+  $("#who").textContent = u ? (u.displayName || u.email) + (isAdmin ? " (admin)" : "") : "";
+  $("#authBtn").textContent = u ? "Sair" : "Entrar";
+  $("#signBtn").hidden = !!u;
+  $("#newBtn").hidden = !isAdmin;
+  if (openId) renderDetail();
+});
+$("#authBtn").onclick = () => user ? signOut(auth) : openAuth("login");
+$("#signBtn").onclick = () => openAuth("signup");
+
+const authDlg = $("#authDlg");
+let mode = "login";
+const dig = s => s.replace(/\D/g, "");
+function setMode(m) {
+  mode = m;
+  authDlg.querySelectorAll(".atab").forEach(b => b.setAttribute("aria-pressed", b.dataset.m === m));
+  authDlg.querySelectorAll(".signup").forEach(el => {
+    el.hidden = m !== "signup";
+    el.querySelectorAll("input").forEach(i => i.required = m === "signup" && !("opt" in i.dataset));
+  });
+  $("[name=password]").autocomplete = m === "signup" ? "new-password" : "current-password";
+  $("#authSubmit").textContent = m === "signup" ? "Criar conta" : "Entrar";
+  $("#forgot").hidden = m !== "login";
+}
+function openAuth(m) { setMode(m); $("#authErr").textContent = ""; if (!authDlg.open) authDlg.showModal(); }
+authDlg.querySelectorAll(".atab").forEach(b => b.onclick = () => setMode(b.dataset.m));
+$("#authClose").onclick = () => authDlg.close();
+
+// máscaras
+const mask = (el, fn) => el.addEventListener("input", () => el.value = fn(dig(el.value)));
+mask($("#cpf"), d => d.slice(0, 11).replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})$/, "$1-$2"));
+mask($("#phone"), d => d.slice(0, 11).replace(/^(\d{2})(\d)/, "($1) $2").replace(/(\d{4,5})(\d{4})$/, "$1-$2"));
+mask($("#cep"), d => d.slice(0, 8).replace(/(\d{5})(\d)/, "$1-$2"));
+
+function cpfOk(c) {
+  if (c.length !== 11 || /^(\d)\1+$/.test(c)) return false;
+  for (let t = 9; t < 11; t++) {
+    let s = 0;
+    for (let i = 0; i < t; i++) s += c[i] * (t + 1 - i);
+    if ((s * 10) % 11 % 10 != c[t]) return false;
+  }
+  return true;
+}
+
+const AUTH_MSG = {
+  "auth/email-already-in-use": "Este e-mail já tem uma conta. Use a aba Entrar.",
+  "auth/invalid-email": "E-mail inválido.",
+  "auth/weak-password": "Senha fraca. Use ao menos 8 caracteres.",
+  "auth/invalid-credential": "E-mail ou senha incorretos.",
+  "auth/too-many-requests": "Muitas tentativas. Aguarde um pouco e tente de novo."
+};
+const authMsg = x => AUTH_MSG[x.code] || x.message || "Não foi possível autenticar.";
+
+async function signup(f) {
+  const cpf = dig(f.cpf), phone = dig(f.phone);
+  if (f.fullName.trim().split(/\s+/).length < 2) throw new Error("Informe nome e sobrenome.");
+  if (!cpfOk(cpf)) throw new Error("CPF inválido.");
+  if (phone.length < 10) throw new Error("Telefone inválido. Informe DDD e número.");
+  if (dig(f.cep).length !== 8) throw new Error("CEP inválido.");
+  const email = f.email.trim(), fullName = f.fullName.trim();
+  const cred = await createUserWithEmailAndPassword(auth, email, f.password);
+  try {
+    const b = writeBatch(db);
+    b.set(doc(db, "cpfs", cpf), { uid: cred.user.uid }); // garante um CPF por conta
+    b.set(doc(db, "users", cred.user.uid), {
+      fullName, email, phone, cpf,
+      address: { cep: dig(f.cep), street: f.street.trim(), number: f.number.trim(), complement: f.complement.trim(),
+                 district: f.district.trim(), city: f.city.trim(), state: f.state.trim().toUpperCase() },
+      createdAt: serverTimestamp()
+    });
+    await b.commit();
+  } catch (x) {
+    await cred.user.delete().catch(() => {});
+    throw new Error(x.code === "permission-denied" ? "Este CPF já está cadastrado." : "Não foi possível salvar o cadastro. Tente de novo.");
+  }
+  await updateProfile(cred.user, { displayName: fullName });
+  $("#who").textContent = fullName;
+  sendEmailVerification(cred.user).catch(() => {});
+  toast("Conta criada! Enviamos um e-mail de verificação.");
+}
+
+$("#authForm").onsubmit = async e => {
+  e.preventDefault();
+  const f = Object.fromEntries(new FormData(e.target)), err = $("#authErr"), btn = $("#authSubmit");
+  err.textContent = ""; btn.disabled = true;
+  try {
+    if (mode === "login") await signInWithEmailAndPassword(auth, f.email.trim(), f.password);
+    else await signup(f);
+    e.target.reset(); authDlg.close();
+  } catch (x) { err.textContent = authMsg(x); }
+  btn.disabled = false;
+};
+$("#forgot").onclick = async () => {
+  const email = $("[name=email]").value.trim(), err = $("#authErr");
+  if (!email) { err.textContent = "Digite seu e-mail acima para receber o link."; return; }
+  try { await sendPasswordResetEmail(auth, email); err.textContent = ""; toast("Link de redefinição enviado."); }
+  catch (x) { err.textContent = authMsg(x); }
+};
+
+/* ---------- Lista em tempo real ---------- */
+onSnapshot(query(collection(db, "auctions"), orderBy("endsAt", "asc")),
+  snap => { auctions = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderGrid(); },
+  e => { $("#grid").innerHTML = `<p class="empty">Erro ao carregar leilões (${esc(e.code)}). Verifique as regras do Firestore.</p>`; });
+
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
+  filter = b.dataset.f;
+  document.querySelectorAll(".tabs button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  renderGrid();
+});
+
+const endMs = a => a.endsAt?.toMillis?.() ?? 0;
+const price = a => a.bidCount ? a.currentBid : a.startPrice;
+
+function renderGrid() {
+  const now = Date.now();
+  let list = auctions.filter(a => filter === "live" ? endMs(a) > now : endMs(a) <= now);
+  if (filter === "done") list = list.reverse();
+  $("#grid").innerHTML = list.length ? list.map(a => `
+    <button class="tile" data-id="${a.id}">
+      <div class="frame"><img src="${esc(a.imageUrl)}" alt="${esc(a.name)}" loading="lazy"></div>
+      <h3>${esc(a.name)}</h3>
+      <div class="meta">${esc(a.set)} · ${esc(a.cond)}</div>
+      <div class="row"><span class="price">${brl(price(a))}</span><span class="meta">${a.bidCount || 0} lances</span></div>
+      <div class="time" data-end="${endMs(a)}"></div>
+    </button>`).join("")
+    : `<p class="empty">${filter === "live" ? "Nenhum leilão ativo no momento. Volte em breve." : "Nenhum leilão encerrado ainda."}</p>`;
+  $("#grid").querySelectorAll(".tile").forEach(t => t.onclick = () => openDetail(t.dataset.id));
+  tick();
+}
+
+function tick() {
+  const now = Date.now();
+  document.querySelectorAll("[data-end]").forEach(el => {
+    const left = +el.dataset.end - now;
+    el.textContent = fmtTime(left);
+    el.classList.toggle("soon", left > 0 && left < 600000);
+  });
+}
+setInterval(() => {
+  tick();
+  if (filter === "live" && auctions.some(a => endMs(a) <= Date.now() && endMs(a) > Date.now() - 1500)) renderGrid();
+  if (openId) syncBidButton();
+}, 1000);
+
+/* ---------- Detalhe e lances ---------- */
+let bids = [];
+function openDetail(id) {
+  openId = id; bids = [];
+  unsubDetail.forEach(u => u());
+  unsubDetail = [
+    onSnapshot(query(collection(db, "auctions", id, "bids"), orderBy("amount", "desc"), limit(10)), s => { bids = s.docs.map(d => d.data()); renderDetail(); }),
+  ];
+  renderDetail();
+  if (!$("#dlg").open) $("#dlg").showModal();
+}
+$("#dlg").addEventListener("close", () => { unsubDetail.forEach(u => u()); unsubDetail = []; openId = null; });
+
+function renderDetail() {
+  const a = auctions.find(x => x.id === openId);
+  if (!a) return;
+  const typing = document.activeElement?.id === "bidInput" ? $("#bidInput").value : null;
+  const min = a.bidCount ? a.currentBid + a.step : a.startPrice;
+  const mine = user && a.sellerId === user.uid;
+  $("#dlgBody").innerHTML = `
+    <div class="detail">
+      <div class="frame"><img src="${esc(a.imageUrl)}" alt="${esc(a.name)}"></div>
+      <div style="display:grid;gap:12px;align-content:start">
+        <div class="row"><h2>${esc(a.name)}</h2><button class="ghost" id="closeBtn" aria-label="Fechar">✕</button></div>
+        <div class="meta">${esc(a.set)} · ${esc(a.cond)}</div>
+        ${a.marketPrice ? `<div class="meta">Preço de mercado: ${brl(a.marketPrice)}</div>` : ""}
+        <div><span class="meta">${a.bidCount ? "Lance atual" : "Lance inicial"}</span><div class="price" style="font-size:2rem">${brl(price(a))}</div>
+          ${a.highBidderName ? `<div class="meta">Maior lance: ${esc(a.highBidderName)}</div>` : ""}</div>
+        <div class="time" data-end="${endMs(a)}" id="clock"></div>
+        <div id="bidArea">
+          ${mine ? `<span class="badge">Seu leilão</span>` : `
+          <label>Seu lance (mínimo ${brl(min)})
+            <input id="bidInput" type="number" step="0.01" min="${min}" value="${min}" ${user ? "" : "disabled"}></label>
+          <button id="bidBtn" class="hot" style="margin-top:8px;width:100%">${user ? "Dar lance" : "Entre para dar lance"}</button>`}
+          <p class="err" id="bidErr"></p>
+        </div>
+        <h3>Últimos lances</h3>
+        <ul class="bids">${bids.length ? bids.map(b => `<li><span>${esc(b.name)}</span><b>${brl(b.amount)}</b></li>`).join("") : `<li class="meta">Nenhum lance ainda. Seja o primeiro.</li>`}</ul>
+        ${isAdmin ? `<button class="ghost" id="delBtn">Excluir leilão</button>` : ""}
+      </div>
+    </div>`;
+  if (typing !== null && $("#bidInput")) $("#bidInput").value = typing;
+  $("#closeBtn").onclick = () => $("#dlg").close();
+  if ($("#delBtn")) $("#delBtn").onclick = async () => {
+    if (!confirm("Excluir este leilão? Essa ação não pode ser desfeita.")) return;
+    try { await deleteDoc(doc(db, "auctions", a.id)); $("#dlg").close(); toast("Leilão excluído."); }
+    catch (e) { toast("Não foi possível excluir: " + (e.code || e.message)); }
+  };
+  if ($("#bidBtn")) $("#bidBtn").onclick = () => user ? placeBid(a.id) : (document.querySelector("#dlg").close(), openAuth("login"));
+  tick(); syncBidButton();
+}
+function syncBidButton() {
+  const a = auctions.find(x => x.id === openId);
+  if (a && $("#bidBtn")) $("#bidBtn").disabled = endMs(a) <= Date.now();
+}
+
+async function placeBid(id) {
+  const amount = Math.round(parseFloat($("#bidInput").value) * 100) / 100;
+  const err = $("#bidErr"); err.textContent = ""; $("#bidBtn").disabled = true;
+  try {
+    await runTransaction(db, async tx => {
+      const r = doc(db, "auctions", id), s = await tx.get(r);
+      if (!s.exists()) throw new Error("Leilão não encontrado.");
+      const a = s.data(), now = Date.now(), end = a.endsAt.toMillis();
+      if (now >= end) throw new Error("Este leilão já encerrou.");
+      if (a.sellerId === user.uid) throw new Error("Você não pode dar lance no seu próprio leilão.");
+      if (a.highBidderId === user.uid) throw new Error("Você já tem o maior lance.");
+      const min = a.bidCount ? a.currentBid + a.step : a.startPrice;
+      if (!(amount >= min)) throw new Error("Lance mínimo: " + brl(min));
+      const upd = { currentBid: amount, bidCount: increment(1), highBidderId: user.uid, highBidderName: user.displayName || "Anônimo" };
+      if (end - now < 120000) upd.endsAt = Timestamp.fromMillis(now + 120000); // anti-sniping: +2 min
+      tx.update(r, upd);
+      tx.set(doc(collection(r, "bids")), { uid: user.uid, name: user.displayName || "Anônimo", amount, at: serverTimestamp() });
+    });
+    toast("Lance registrado!");
+  } catch (e) { err.textContent = e.message || "Não foi possível registrar o lance."; }
+  syncBidButton();
+}
+
+/* ---------- Criar leilão ---------- */
+$("#newBtn").onclick = () => { $("#newErr").textContent = ""; $("#newDlg").showModal(); };
+$("#newCancel").onclick = () => $("#newDlg").close();
+$("#newForm").onsubmit = async e => {
+  e.preventDefault();
+  const f = new FormData(e.target), file = f.get("img"), err = $("#newErr"), btn = $("#newSubmit");
+  if (!user || !isAdmin) return;
+  if (file.size > 5 * 1024 * 1024) { err.textContent = "A imagem passa de 5 MB."; return; }
+  btn.disabled = true; btn.textContent = "Publicando…"; err.textContent = "";
+  try {
+    const imageUrl = await compress(file);
+    const start = parseFloat(f.get("start")), step = parseFloat(f.get("step"));
+    await addDoc(collection(db, "auctions"), {
+      name: f.get("name").trim(), set: f.get("set").trim(), cond: f.get("cond"),
+      startPrice: start, step, marketPrice: parseFloat(f.get("market")) || 0, currentBid: start, bidCount: 0, highBidderId: null, highBidderName: null,
+      sellerId: user.uid, sellerName: user.displayName || "Anônimo", imageUrl,
+      endsAt: Timestamp.fromMillis(Date.now() + Number(f.get("hours")) * 3600000),
+      createdAt: serverTimestamp()
+    });
+    e.target.reset(); $("#newDlg").close(); toast("Leilão publicado!");
+  } catch (x) { err.textContent = "Erro ao publicar: " + (x.code || x.message); }
+  btn.disabled = false; btn.textContent = "Publicar leilão";
+};
+</script>
+</body>
+</html>
