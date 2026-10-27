@@ -390,7 +390,7 @@ function renderDetail() {
           ${mine ? `<span class="badge">Seu leilão</span>` : `
           ${lead ? `<span class="badge">Você está com o maior lance</span>` : ""}
           <label for="bidInput">${lead ? "Digite um valor maior para aumentar seu lance" : "Seu lance"} (mínimo ${brl(min)})</label>
-          <input id="bidInput" type="number" inputmode="numeric" step="1" min="${min}" value="${Math.max(min, draft ?? min)}" ${user ? "" : "disabled"}>
+          <input id="bidInput" type="number" inputmode="numeric" step="1" min="${min}" placeholder="${min}" value="${lead ? (draft ?? "") : Math.max(min, draft ?? min)}" ${user ? "" : "disabled"}>
           <button id="bidBtn" class="hot" style="margin-top:8px;width:100%">${user ? (lead ? "Aumentar meu lance" : "Dar lance") : "Entre para dar lance"}</button>`}
           <p class="err" id="bidErr"></p>
         </div>
