@@ -142,11 +142,11 @@ input,select{font:inherit;padding:10px 12px;border-radius:8px;border:1px solid v
       </label>
     </div>
     <div class="two">
-      <label>Lance inicial (R$)<input name="start" type="number" min="1" step="0.01" required></label>
-      <label>Incremento mínimo (R$)<input name="step" type="number" min="1" step="0.01" value="5" required></label>
+      <label>Lance inicial (R$)<input name="start" type="number" min="1" step="1" required></label>
+      <label>Incremento mínimo (R$)<input name="step" type="number" min="1" step="1" value="1" required></label>
     </div>
     <div class="two">
-      <label>Valor de mercado (R$)<input name="market" type="number" min="0.01" step="0.01" required placeholder="Preço de referência da carta"></label>
+      <label>Valor de mercado (R$)<input name="market" type="number" min="1" step="1" required placeholder="Preço de referência da carta"></label>
     </div>
     <div class="two">
       <label>Duração
@@ -196,7 +196,7 @@ async function compress(file) {
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const brl = n => Number(n || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const brl = n => Number(n || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const fmtTime = ms => {
   if (ms <= 0) return "Encerrado";
   const s = Math.floor(ms / 1000), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
@@ -390,7 +390,7 @@ function renderDetail() {
           ${mine ? `<span class="badge">Seu leilão</span>` : `
           ${lead ? `<span class="badge">Você está com o maior lance</span>` : ""}
           <label for="bidInput">${lead ? "Digite um valor maior para aumentar seu lance" : "Seu lance"} (mínimo ${brl(min)})</label>
-          <input id="bidInput" type="number" inputmode="decimal" step="0.01" min="${min}" value="${Math.max(min, draft ?? min).toFixed(2)}" ${user ? "" : "disabled"}>
+          <input id="bidInput" type="number" inputmode="numeric" step="1" min="${min}" value="${Math.max(min, draft ?? min)}" ${user ? "" : "disabled"}>
           <button id="bidBtn" class="hot" style="margin-top:8px;width:100%">${user ? (lead ? "Aumentar meu lance" : "Dar lance") : "Entre para dar lance"}</button>`}
           <p class="err" id="bidErr"></p>
         </div>
@@ -420,8 +420,9 @@ function syncBidButton() {
 }
 
 async function placeBid(id) {
-  const amount = Math.round(parseFloat($("#bidInput").value) * 100) / 100;
-  const err = $("#bidErr"); err.textContent = ""; $("#bidBtn").disabled = true;
+  const amount = parseFloat($("#bidInput").value), err = $("#bidErr");
+  if (!Number.isInteger(amount)) { err.textContent = "Digite um valor em reais inteiros, sem centavos."; return; }
+  err.textContent = ""; $("#bidBtn").disabled = true;
   try {
     await runTransaction(db, async tx => {
       const r = doc(db, "auctions", id), s = await tx.get(r);
@@ -453,10 +454,10 @@ $("#newForm").onsubmit = async e => {
   btn.disabled = true; btn.textContent = "Publicando…"; err.textContent = "";
   try {
     const imageUrl = await compress(file);
-    const start = parseFloat(f.get("start")), step = parseFloat(f.get("step"));
+    const start = Math.round(parseFloat(f.get("start"))), step = Math.round(parseFloat(f.get("step")));
     await addDoc(collection(db, "auctions"), {
       name: f.get("name").trim(), set: f.get("set").trim(), cond: f.get("cond"),
-      startPrice: start, step, marketPrice: parseFloat(f.get("market")) || 0, currentBid: start, bidCount: 0, highBidderId: null, highBidderName: null,
+      startPrice: start, step, marketPrice: Math.round(parseFloat(f.get("market"))) || 0, currentBid: start, bidCount: 0, highBidderId: null, highBidderName: null,
       sellerId: user.uid, sellerName: user.displayName || "Anônimo", imageUrl,
       endsAt: Timestamp.fromMillis(Date.now() + Number(f.get("hours")) * 3600000),
       createdAt: serverTimestamp()
