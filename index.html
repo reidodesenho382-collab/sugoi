@@ -14,6 +14,11 @@
 .signup{display:grid;gap:14px}
 .link{background:none;color:var(--mute);padding:0;font-weight:500;text-decoration:underline;justify-self:start}
 .three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.stepper{display:grid;grid-template-columns:48px 1fr 48px;gap:8px;margin:4px 0 8px}
+.stepper input{text-align:center;font-weight:700;font-size:1.1rem}
+.stepper button{padding:8px;font-size:1.2rem}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.chip{padding:6px 12px;font-size:.9rem}
 @media(max-width:520px){.two,.three{grid-template-columns:1fr}}
 body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "DM Sans",system-ui,sans-serif}
 h1,h2,h3,.logo{font-family:"Bricolage Grotesque",system-ui,sans-serif;margin:0}
@@ -349,9 +354,9 @@ setInterval(() => {
 }, 1000);
 
 /* ---------- Detalhe e lances ---------- */
-let bids = [];
+let bids = [], draft = null;
 function openDetail(id) {
-  openId = id; bids = [];
+  openId = id; bids = []; draft = null;
   unsubDetail.forEach(u => u());
   unsubDetail = [
     onSnapshot(query(collection(db, "auctions", id, "bids"), orderBy("amount", "desc"), limit(10)), s => { bids = s.docs.map(d => d.data()); renderDetail(); }),
@@ -364,7 +369,6 @@ $("#dlg").addEventListener("close", () => { unsubDetail.forEach(u => u()); unsub
 function renderDetail() {
   const a = auctions.find(x => x.id === openId);
   if (!a) return;
-  const typing = document.activeElement?.id === "bidInput" ? $("#bidInput").value : null;
   const min = a.bidCount ? a.currentBid + a.step : a.startPrice;
   const mine = user && a.sellerId === user.uid;
   $("#dlgBody").innerHTML = `
@@ -379,8 +383,13 @@ function renderDetail() {
         <div class="time" data-end="${endMs(a)}" id="clock"></div>
         <div id="bidArea">
           ${mine ? `<span class="badge">Seu leilão</span>` : `
-          <label>Seu lance (mínimo ${brl(min)})
-            <input id="bidInput" type="number" step="0.01" min="${min}" value="${min}" ${user ? "" : "disabled"}></label>
+          <label for="bidInput">Seu lance (mínimo ${brl(min)})</label>
+          <div class="stepper">
+            <button type="button" class="ghost" id="bMinus" aria-label="Diminuir lance" ${user ? "" : "disabled"}>−</button>
+            <input id="bidInput" type="number" step="0.01" min="${min}" value="${Math.max(min, draft ?? min).toFixed(2)}" ${user ? "" : "disabled"}>
+            <button type="button" class="ghost" id="bPlus" aria-label="Aumentar lance" ${user ? "" : "disabled"}>+</button>
+          </div>
+          <div class="chips">${[2, 5, 10].map(n => `<button type="button" class="ghost chip" data-add="${n * a.step}" ${user ? "" : "disabled"}>+${brl(n * a.step)}</button>`).join("")}</div>
           <button id="bidBtn" class="hot" style="margin-top:8px;width:100%">${user ? "Dar lance" : "Entre para dar lance"}</button>`}
           <p class="err" id="bidErr"></p>
         </div>
@@ -389,7 +398,15 @@ function renderDetail() {
         ${isAdmin ? `<button class="ghost" id="delBtn">Excluir leilão</button>` : ""}
       </div>
     </div>`;
-  if (typing !== null && $("#bidInput")) $("#bidInput").value = typing;
+  const inp = $("#bidInput");
+  if (inp) {
+    const cur = () => parseFloat(inp.value) || min;
+    const set = v => { draft = Math.round(Math.max(min, v) * 100) / 100; inp.value = draft.toFixed(2); };
+    inp.oninput = () => { draft = parseFloat(inp.value) || null; };
+    $("#bMinus").onclick = () => set(cur() - a.step);
+    $("#bPlus").onclick = () => set(cur() + a.step);
+    document.querySelectorAll(".chip").forEach(c => c.onclick = () => set(cur() + Number(c.dataset.add)));
+  }
   $("#closeBtn").onclick = () => $("#dlg").close();
   if ($("#delBtn")) $("#delBtn").onclick = async () => {
     if (!confirm("Excluir este leilão? Essa ação não pode ser desfeita.")) return;
@@ -422,6 +439,7 @@ async function placeBid(id) {
       tx.update(r, upd);
       tx.set(doc(collection(r, "bids")), { uid: user.uid, name: user.displayName || "Anônimo", amount, at: serverTimestamp() });
     });
+    draft = null;
     toast("Lance registrado!");
   } catch (e) { err.textContent = e.message || "Não foi possível registrar o lance."; }
   syncBidButton();
