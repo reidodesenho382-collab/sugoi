@@ -144,7 +144,7 @@ input,select{font:inherit;padding:10px 12px;border-radius:8px;border:1px solid v
       <label>Incremento mínimo (R$)<input name="step" type="number" min="1" step="0.01" value="5" required></label>
     </div>
     <div class="two">
-      <label>Preço de mercado (R$, referência)<input name="market" type="number" min="0" step="0.01"></label>
+      <label>Valor de mercado (R$)<input name="market" type="number" min="0.01" step="0.01" required placeholder="Preço de referência da carta"></label>
     </div>
     <div class="two">
       <label>Duração
@@ -331,6 +331,7 @@ function renderGrid() {
       <div class="frame"><img src="${esc(a.imageUrl)}" alt="${esc(a.name)}" loading="lazy"></div>
       <h3>${esc(a.name)}</h3>
       <div class="meta">${esc(a.set)} · ${esc(a.cond)}</div>
+      ${a.marketPrice ? `<div class="meta">Valor de mercado: ${brl(a.marketPrice)}</div>` : ""}
       <div class="row"><span class="price">${brl(price(a))}</span><span class="meta">${a.bidCount || 0} lances</span></div>
       <div class="time" data-end="${endMs(a)}"></div>
     </button>`).join("")
@@ -371,26 +372,24 @@ function renderDetail() {
   if (!a) return;
   const min = a.bidCount ? a.currentBid + a.step : a.startPrice;
   const mine = user && a.sellerId === user.uid;
+  const lead = user && a.highBidderId === user.uid;
+  const hadFocus = document.activeElement?.id === "bidInput";
   $("#dlgBody").innerHTML = `
     <div class="detail">
       <div class="frame"><img src="${esc(a.imageUrl)}" alt="${esc(a.name)}"></div>
       <div style="display:grid;gap:12px;align-content:start">
         <div class="row"><h2>${esc(a.name)}</h2><button class="ghost" id="closeBtn" aria-label="Fechar">✕</button></div>
         <div class="meta">${esc(a.set)} · ${esc(a.cond)}</div>
-        ${a.marketPrice ? `<div class="meta">Preço de mercado: ${brl(a.marketPrice)}</div>` : ""}
+        ${a.marketPrice ? `<div class="meta">Valor de mercado: ${brl(a.marketPrice)}</div>` : ""}
         <div><span class="meta">${a.bidCount ? "Lance atual" : "Lance inicial"}</span><div class="price" style="font-size:2rem">${brl(price(a))}</div>
           ${a.highBidderName ? `<div class="meta">Maior lance: ${esc(a.highBidderName)}</div>` : ""}</div>
         <div class="time" data-end="${endMs(a)}" id="clock"></div>
         <div id="bidArea">
           ${mine ? `<span class="badge">Seu leilão</span>` : `
-          <label for="bidInput">Seu lance (mínimo ${brl(min)})</label>
-          <div class="stepper">
-            <button type="button" class="ghost" id="bMinus" aria-label="Diminuir lance" ${user ? "" : "disabled"}>−</button>
-            <input id="bidInput" type="number" step="0.01" min="${min}" value="${Math.max(min, draft ?? min).toFixed(2)}" ${user ? "" : "disabled"}>
-            <button type="button" class="ghost" id="bPlus" aria-label="Aumentar lance" ${user ? "" : "disabled"}>+</button>
-          </div>
-          <div class="chips">${[2, 5, 10].map(n => `<button type="button" class="ghost chip" data-add="${n * a.step}" ${user ? "" : "disabled"}>+${brl(n * a.step)}</button>`).join("")}</div>
-          <button id="bidBtn" class="hot" style="margin-top:8px;width:100%">${user ? "Dar lance" : "Entre para dar lance"}</button>`}
+          ${lead ? `<span class="badge">Você está com o maior lance</span>` : ""}
+          <label for="bidInput">${lead ? "Digite um valor maior para aumentar seu lance" : "Seu lance"} (mínimo ${brl(min)})</label>
+          <input id="bidInput" type="number" inputmode="decimal" step="0.01" min="${min}" value="${Math.max(min, draft ?? min).toFixed(2)}" ${user ? "" : "disabled"}>
+          <button id="bidBtn" class="hot" style="margin-top:8px;width:100%">${user ? (lead ? "Aumentar meu lance" : "Dar lance") : "Entre para dar lance"}</button>`}
           <p class="err" id="bidErr"></p>
         </div>
         <h3>Últimos lances</h3>
@@ -400,12 +399,9 @@ function renderDetail() {
     </div>`;
   const inp = $("#bidInput");
   if (inp) {
-    const cur = () => parseFloat(inp.value) || min;
-    const set = v => { draft = Math.round(Math.max(min, v) * 100) / 100; inp.value = draft.toFixed(2); };
     inp.oninput = () => { draft = parseFloat(inp.value) || null; };
-    $("#bMinus").onclick = () => set(cur() - a.step);
-    $("#bPlus").onclick = () => set(cur() + a.step);
-    document.querySelectorAll(".chip").forEach(c => c.onclick = () => set(cur() + Number(c.dataset.add)));
+    inp.onkeydown = e => { if (e.key === "Enter" && $("#bidBtn") && !$("#bidBtn").disabled) $("#bidBtn").click(); };
+    if (hadFocus) inp.focus();
   }
   $("#closeBtn").onclick = () => $("#dlg").close();
   if ($("#delBtn")) $("#delBtn").onclick = async () => {
@@ -431,7 +427,6 @@ async function placeBid(id) {
       const a = s.data(), now = Date.now(), end = a.endsAt.toMillis();
       if (now >= end) throw new Error("Este leilão já encerrou.");
       if (a.sellerId === user.uid) throw new Error("Você não pode dar lance no seu próprio leilão.");
-      if (a.highBidderId === user.uid) throw new Error("Você já tem o maior lance.");
       const min = a.bidCount ? a.currentBid + a.step : a.startPrice;
       if (!(amount >= min)) throw new Error("Lance mínimo: " + brl(min));
       const upd = { currentBid: amount, bidCount: increment(1), highBidderId: user.uid, highBidderName: user.displayName || "Anônimo" };
